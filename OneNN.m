@@ -7,10 +7,10 @@
 clear all
 clc
 
-load Covariance1
-load Covariance2
-load Covariance3
-load Labels_test
+load('C:\Users\nikos\Desktop\data\Covariance1.mat');
+load('C:\Users\nikos\Desktop\data\Covariance2.mat');
+load('C:\Users\nikos\Desktop\data\Covariance3.mat');
+load('C:\Users\nikos\Desktop\data\Labels_test.mat');
 
 
 
