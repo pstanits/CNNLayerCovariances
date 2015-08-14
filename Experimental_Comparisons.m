@@ -50,6 +50,7 @@ for prc = 1:length(train_percent)
     % Iterate over different covariances
     for vr = 1:length(variables)
         X = variables{vr};
+        disp([prc vr])
         % Split between training and test
         Cov_test = X(I_test,:,:);
         Cov_train = X(I_train,:,:); 
@@ -58,7 +59,7 @@ for prc = 1:length(train_percent)
         sampled_train_labels = train_lab(ind_train_perc);
        
         % Compute distance between covariance matrices
-        Cov_Distances = zeros(size(Cov_train,1),size(Cov_test,1));
+        Cov_Distances = zeros(size(Cov_test,1),size(Cov_train,1));
         switch Metrics
             case 'Stein'
                 % Iterate with double for between test (rows) and train
