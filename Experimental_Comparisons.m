@@ -23,7 +23,7 @@ labels = double(labels);
 labels = labels + 1;
 variables = {Layer1,Layer2,Layer3,Cov_Baseline};
 split = 0.8;
-train_percent = [0.2 0.3 0.4 0.5 0.6 0.7 0.8];
+train_percent = [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1];
 Metrics = input('Define the Similarity function to be used:     ');
 accuracy = zeros(size(variables,2),numel(train_percent));
 %% Prepare n folds for more robust validations
