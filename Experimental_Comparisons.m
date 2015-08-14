@@ -73,17 +73,17 @@ for prc = 1:length(train_percent)
             case 'LE'
                 % Compute matrix logarithms based on my_logm
                 for covtrain = 1:size(Cov_train,1)
-                    Cov_train(covtrain,:,:) = my_logm(squeeze(Cov_train,:,:));
+                    Cov_train(covtrain,:,:) = my_logm(squeeze(Cov_train(covtrain,:,:)));
                 end
                 
                 for covtest = 1:size(Cov_test,1)
-                    Cov_test(covtest,:,:) = my_logm(squeeze(Cov_test,:,:));
+                    Cov_test(covtest,:,:) = my_logm(squeeze(Cov_test(covtest,:,:)));
                 end
                 
                 % Reshape covariance and compute euclidean distances
                 Cov_train = reshape(Cov_train,[(size(Cov_train,2))^2,size(Cov_train,1)])';
                 Cov_test = reshape(Cov_test,[(size(Cov_test,2))^2,size(Cov_test,1)])';
-                Cov_distances = pdist2(Cov_test, Cov_train, 'euclidean');
+                Cov_Distances = pdist2(Cov_test, Cov_train, 'euclidean');
         end
         
         %% Predict labels based on 1NN
