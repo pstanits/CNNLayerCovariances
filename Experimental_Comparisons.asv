@@ -102,15 +102,13 @@ for prc = 1:length(train_percent)
 end
      
 %% Plot Results
-col = {'g','r','m','b'};
+col = jet(size(variables,2));
 
 for vr = 1:size(accuracy,1)
-    plot(train_percent,accuracy(vr,:),'color',col{vr},'Linewidth',2);
+    plot(train_percent,accuracy(vr,:),'color',col(vr,:),'Linewidth',2);
     hold on
 end
 
-grid on
-axis('tight')
 title(sprintf('Performance Results using the %s metric',Metrics))
 
 
