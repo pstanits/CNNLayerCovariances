@@ -23,7 +23,7 @@ labels = double(labels);
 labels = labels + 1;
 variables = {Layer1,Layer2,Layer3,Cov_Baseline};
 split = 0.8;
-alpha = 100;
+alpha = 1;
 train_percent = [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1];
 Metrics = input('Define the Similarity function to be used:     ');
 accuracy = zeros(size(variables,2),numel(train_percent));
@@ -71,7 +71,7 @@ for prc = 1:length(train_percent)
                 for testmat = 1:size(Cov_test,1)
                     for trainmat = 1:size(Cov_train,1)
                         Test_kernel(testmat,trainmat) = sqrt(log(det(squeeze(Cov_train(trainmat,:,:)) + squeeze(Cov_test(testmat,:,:)) / 2)) ...
-                                                          - 0.5 * log(det(squeeze(Cov_train(trainmat,:,:)) * squeeze(Cov_test(testmat,:,:)))));
+                                                          - 0.5 * log(det(squeeze(Cov_test(testmat,:,:)) * squeeze(Cov_train(traintmat,:,:)))));
                     end 
                 end  
                 Test_kernel = [(1:size(Cov_test,1))' exp( - Test_kernel / alpha)];
