@@ -74,7 +74,7 @@ for prc = 1:length(train_percent)
             case 'LE'
                 % Compute matrix logarithms based on my_logm
                 for covtrain = 1:size(Cov_train,1)
-                    Cov_train(covtrain,:,:) = my_logm(squeeze(Cov_train(covtrain,:,:)))
+                    Cov_train(covtrain,:,:) = my_logm(squeeze(Cov_train(covtrain,:,:)));
                 end
                 
                 for covtest = 1:size(Cov_test,1)
