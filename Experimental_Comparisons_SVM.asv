@@ -22,18 +22,18 @@ load('C:\Users\nikos\Desktop\data\BaselineCov.mat');
 labels = double(labels);
 labels = labels + 1;
 
-Comb_Cov_12 = zeros(10000,64,64);
-Comb_Cov_23 = zeros(10000,96,96);
+Comb_Conv_12 = zeros(10000,96,96);
+Comb_Conv_23 = zeros(10000,96,96);
 Comb_Cov_123 = zeros(10000,128,128);
 for i = 1:size(Layer1,1)
     disp(i)
-    Comb_Cov_12(i,:,:) = blkdiag(squeeze(Layer1(i,:,:)),squeeze(Layer2(i,:,:)));
-    Comb_Cov_23(i,:,:) = blkdiag(squeeze(Layer2(i,:,:)),squeeze(Layer3(i,:,:)));
+    Comb_Conv_12(i,:,:) = blkdiag(squeeze(Layer1(i,:,:)),squeeze(Layer2(i,:,:)));
+    Comb_Conv_23(i,:,:) = blkdiag(squeeze(Layer2(i,:,:)),squeeze(Layer3(i,:,:)));
     Comb_Cov_123(i,:,:) = blkdiag(squeeze(Layer1(i,:,:)),squeeze(Layer2(i,:,:)),squeeze(Layer3(i,:,:)));
 end
 
 
-variables = {Layer1,Layer2,Layer3, Comb_Cov_12, Comb_Cov_23, Comb_Cov_123, Cov_Baseline};
+variables = {Layer1,Layer2,Layer3, Comb_Cov_12, Comb_Conv_23, Comb_Conv_123, Cov_Baseline};
 split = 0.8;
 alpha = 1000;
 train_percent = [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1];
@@ -135,7 +135,7 @@ for prc = 1:length(train_percent)
 end
      
 %% Plot Results
-col = {'g','r','m','y','c','k', 'b'};
+col = {'g','r','m','y', 'b'};
 
 for vr = 1:size(accuracy,1)
     plot(train_percent,accuracy(vr,:),'color',col{vr},'Linewidth',2);

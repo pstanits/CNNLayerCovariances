@@ -21,21 +21,8 @@ load('C:\Users\nikos\Desktop\data\Labels_test.mat');
 load('C:\Users\nikos\Desktop\data\BaselineCov.mat');
 labels = double(labels);
 labels = labels + 1;
-
-Comb_Cov_12 = zeros(10000,64,64);
-Comb_Cov_23 = zeros(10000,96,96);
-Comb_Cov_123 = zeros(10000,128,128);
-for i = 1:size(Layer1,1)
-    disp(i)
-    Comb_Cov_12(i,:,:) = blkdiag(squeeze(Layer1(i,:,:)),squeeze(Layer2(i,:,:)));
-    Comb_Cov_23(i,:,:) = blkdiag(squeeze(Layer2(i,:,:)),squeeze(Layer3(i,:,:)));
-    Comb_Cov_123(i,:,:) = blkdiag(squeeze(Layer1(i,:,:)),squeeze(Layer2(i,:,:)),squeeze(Layer3(i,:,:)));
-end
-
-
-variables = {Layer1,Layer2,Layer3, Comb_Cov_12, Comb_Cov_23, Comb_Cov_123, Cov_Baseline};
+variables = {Layer1,Layer2,Layer3,Cov_Baseline};
 split = 0.8;
-alpha = 1000;
 train_percent = [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1];
 Metrics = input('Define the Similarity function to be used:     ');
 accuracy = zeros(size(variables,2),numel(train_percent));
@@ -57,7 +44,6 @@ for l = 1:NumClass
         train_lab = [train_lab; labels(indtrain)];
 end
 
-
 %% Iterate over the percentages
 for prc = 1:length(train_percent)
     ind_train_perc = randsample(1:1:numel(I_train),floor(train_percent(prc) * size(I_train,1)));
@@ -73,37 +59,17 @@ for prc = 1:length(train_percent)
         sampled_train_labels = train_lab(ind_train_perc);
        
         % Compute distance between covariance matrices
-        
+        Cov_Distances = zeros(size(Cov_test,1),size(Cov_train,1));
         switch Metrics
             case 'Stein'
-                Test_kernel = zeros(size(Cov_test,1),size(Cov_train,1));
-                Train_kernel = zeros(size(Cov_train,1),size(Cov_train,1));
                 % Iterate with double for between test (rows) and train
                 % (column) covariance matrices.
                 for testmat = 1:size(Cov_test,1)
                     for trainmat = 1:size(Cov_train,1)
-                        Test_kernel(testmat,trainmat) = sqrt(log(det(squeeze(Cov_train(trainmat,:,:)) + squeeze(Cov_test(testmat,:,:)) / 2)) ...
-                                                          - 0.5 * log(det(squeeze(Cov_test(testmat,:,:)) * squeeze(Cov_train(trainmat,:,:)))));
+                        Cov_Distances(testmat,trainmat) = sqrt(log(det(squeeze(Cov_train(trainmat,:,:)) + squeeze(Cov_test(testmat,:,:)) / 2)) ...
+                                                          - 0.5 * log(det(squeeze(Cov_train(trainmat,:,:)) * squeeze(Cov_test(testmat,:,:)))));
                     end 
                 end  
-                Test_kernel = [(1:size(Cov_test,1))' exp( - Test_kernel / alpha)];
-                
-                % Compute Train kernel
-                b = 0;
-                for index1 = 1:size(Cov_train,1)
-                    b = b + 1;
-                    for index2 = b:size(Cov_train,1)
-                        Train_kernel(index1,index2) = sqrt(log(det(squeeze(Cov_train(index1,:,:)) + squeeze(Cov_train(index2,:,:)) / 2)) ...
-                                                          - 0.5 * log(det(squeeze(Cov_train(index1,:,:)) * squeeze(Cov_train(index2,:,:)))));
-                        
-                    end
-                end
-                % Symmetrize to avoid computing entries twice
-                Train_kernel = Train_kernel + Train_kernel';
-                Train_kernel = [(1:size(Cov_train))' exp( - Train_kernel / alpha)];
-                if sum(sum(Train_kernel)) == 0
-                    error('Bad Kernel')
-                end
                                 
             case 'LE'
                 % Compute matrix logarithms based on my_logm
@@ -118,24 +84,28 @@ for prc = 1:length(train_percent)
                 % Reshape covariance and compute euclidean distances
                 Cov_train = reshape(Cov_train,[(size(Cov_train,1)),size(Cov_train,2)^2]);
                 Cov_test = reshape(Cov_test,[(size(Cov_test,1)),size(Cov_test,2)^2]);
-                Test_kernel = pdist2(Cov_test, Cov_train, 'euclidean');
-                Test_kernel = [(1:size(Cov_test,1))' exp( - Test_kernel.^2 / alpha)];
-                Train_kernel = pdist2(Cov_train, Cov_train, 'euclidean');
-                Train_kernel = [(1:size(Cov_train))' exp( - Train_kernel.^2 / alpha)];
+                Cov_Distances = pdist2(Cov_test, Cov_train, 'euclidean');
+                
+            case 'AIRM'
+                
         end
         
-        %% Train SVM based on the precomputed kernels
-        trained_model = svmtrain(sampled_train_labels, Train_kernel,'-s 0 -t 4');
+        %% Predict labels based on 1NN
+        [~, index_match] = min(Cov_Distances, [], 2); 
         
-        %% Predict based on the model
-        [predClass, acc, decVals] = svmpredict(testlab, Test_kernel, trained_model);
-        accuracy(vr,prc) = acc(1);
-        sprintf('Accuracy for variable %d  and train percent %1.1f%% is %10.1f%%',vr, 100 * train_percent(prc),acc(1))
+        %% Compute Accuracy
+        error = 0;
+        for testsam = 1:length(testlab)
+             if testlab(testsam) ~= sampled_train_labels(index_match(testsam))
+                 error = error + 1;
+             end
+        end  
+        accuracy(vr,prc) = 1 - error / numel(testlab);
     end   
 end
      
 %% Plot Results
-col = {'g','r','m','y','c','k', 'b'};
+col = {'g','r','m','b'};
 
 for vr = 1:size(accuracy,1)
     plot(train_percent,accuracy(vr,:),'color',col{vr},'Linewidth',2);
@@ -145,3 +115,13 @@ end
 grid on
 axis('tight')
 title(sprintf('Performance Results using the %s metric',Metrics))
+
+
+    
+    
+    
+    
+    
+    
+    
+    

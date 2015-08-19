@@ -82,8 +82,8 @@ for prc = 1:length(train_percent)
                 end
                 
                 % Reshape covariance and compute euclidean distances
-                Cov_train = reshape(Cov_train,[(size(Cov_train,2))^2,size(Cov_train,1)])';
-                Cov_test = reshape(Cov_test,[(size(Cov_test,2))^2,size(Cov_test,1)])';
+                Cov_train = reshape(Cov_train,[(size(Cov_train,1)),size(Cov_train,2)^2]);
+                Cov_test = reshape(Cov_test,[(size(Cov_test,1)),size(Cov_test,2)^2]);
                 Cov_Distances = pdist2(Cov_test, Cov_train, 'euclidean');
         end
         
