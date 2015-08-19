@@ -22,18 +22,18 @@ load('C:\Users\nikos\Desktop\data\BaselineCov.mat');
 labels = double(labels);
 labels = labels + 1;
 
-Comb_Conv_12 = zeros(10000,96,96);
-Comb_Conv_23 = zeros(10000,96,96);
+Comb_Cov_12 = zeros(10000,64,64);
+Comb_Cov_23 = zeros(10000,96,96);
 Comb_Cov_123 = zeros(10000,128,128);
 for i = 1:size(Layer1,1)
     disp(i)
-    Comb_Conv_12(i,:,:) = blkdiag(squeeze(Layer1(i,:,:)),squeeze(Layer2(i,:,:)));
-    Comb_Conv_23(i,:,:) = blkdiag(squeeze(Layer2(i,:,:)),squeeze(Layer3(i,:,:)));
+    Comb_Cov_12(i,:,:) = blkdiag(squeeze(Layer1(i,:,:)),squeeze(Layer2(i,:,:)));
+    Comb_Cov_23(i,:,:) = blkdiag(squeeze(Layer2(i,:,:)),squeeze(Layer3(i,:,:)));
     Comb_Cov_123(i,:,:) = blkdiag(squeeze(Layer1(i,:,:)),squeeze(Layer2(i,:,:)),squeeze(Layer3(i,:,:)));
 end
 
 
-variables = {Layer1,Layer2,Layer3, Comb_Cov_12, Comb_Conv_23, Comb_Conv_123, Cov_Baseline};
+variables = {Layer1,Layer2,Layer3, Comb_Cov_12, Comb_Cov_23, Comb_Cov_123, Cov_Baseline};
 split = 0.8;
 alpha = 1000;
 train_percent = [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1];
@@ -82,29 +82,31 @@ for prc = 1:length(train_percent)
                 % (column) covariance matrices.
                 for testmat = 1:size(Cov_test,1)
                     for trainmat = 1:size(Cov_train,1)
-                        Test_kernel(testmat,trainmat) = sqrt(log(det(squeeze(Cov_train(trainmat,:,:)) + squeeze(Cov_test(testmat,:,:)) / 2)) ...
-                                                          - 0.5 * log(det(squeeze(Cov_test(testmat,:,:)) * squeeze(Cov_train(trainmat,:,:)))));
+                        Test_kernel(testmat,trainmat) = log(det(squeeze(Cov_train(trainmat,:,:)) + squeeze(Cov_test(testmat,:,:)) / 2)) ...
+                                                          - 0.5 * log(det(squeeze(Cov_test(testmat,:,:)) * squeeze(Cov_train(trainmat,:,:))));
                     end 
                 end  
-                Test_kernel = [(1:size(Cov_test,1))' exp( - Test_kernel / alpha)];
+                Test_kernel = [(1:size(Cov_test,1))' exp( - Test_kernel.^2 / alpha)];
                 
                 % Compute Train kernel
                 b = 0;
                 for index1 = 1:size(Cov_train,1)
                     b = b + 1;
                     for index2 = b:size(Cov_train,1)
-                        Train_kernel(index1,index2) = sqrt(log(det(squeeze(Cov_train(index1,:,:)) + squeeze(Cov_train(index2,:,:)) / 2)) ...
-                                                          - 0.5 * log(det(squeeze(Cov_train(index1,:,:)) * squeeze(Cov_train(index2,:,:)))));
+                        Train_kernel(index1,index2) = log(det(squeeze(Cov_train(index1,:,:)) + squeeze(Cov_train(index2,:,:)) / 2)) ...
+                                                          - 0.5 * log(det(squeeze(Cov_train(index1,:,:)) * squeeze(Cov_train(index2,:,:))));
                         
                     end
                 end
                 % Symmetrize to avoid computing entries twice
-                Train_kernel = Train_kernel + Train_kernel';
+                Train_kernel = Train_kernel + Train_kernel' - 1/2 * diag(diag(Train_kernel));
                 Train_kernel = [(1:size(Cov_train))' exp( - Train_kernel / alpha)];
                 if sum(sum(Train_kernel)) == 0
                     error('Bad Kernel')
                 end
-                                
+                   
+                
+                
             case 'LE'
                 % Compute matrix logarithms based on my_logm
                 for covtrain = 1:size(Cov_train,1)
@@ -122,6 +124,36 @@ for prc = 1:length(train_percent)
                 Test_kernel = [(1:size(Cov_test,1))' exp( - Test_kernel.^2 / alpha)];
                 Train_kernel = pdist2(Cov_train, Cov_train, 'euclidean');
                 Train_kernel = [(1:size(Cov_train))' exp( - Train_kernel.^2 / alpha)];
+                
+                
+                
+            case 'AIRM'
+                Test_kernel = zeros(size(Cov_test,1),size(Cov_train,1));
+                Train_kernel = zeros(size(Cov_train,1),size(Cov_train,1));
+                % Iterate with double for between test (rows) and train
+                % (column) covariance matrices.
+                for testmat = 1:size(Cov_test,1)
+                    for trainmat = 1:size(Cov_train,1)
+                        Test_kernel(testmat,trainmat) = norm(my_logm(squeeze(Cov_test(testmat,:,:)).^(0.5) * squeeze(Cov_train(trainmat,:,:)) * ...
+                            squeeze(Cov_test(testmat,:,:)).^(0.5)),'fro');
+                    end 
+                end  
+                Test_kernel = [(1:size(Cov_test,1))' exp( - Test_kernel.^2 / alpha)];
+                
+                % Compute Train kernel
+                b = 0;
+                for index1 = 1:size(Cov_train,1)
+                    b = b + 1;
+                    for index2 = b:size(Cov_train,1)
+                        Train_kernel(index1,index2) = log(det(squeeze(Cov_train(index1,:,:)) + squeeze(Cov_train(index2,:,:)) / 2)) ...
+                                                          - 0.5 * log(det(squeeze(Cov_train(index1,:,:)) * squeeze(Cov_train(index2,:,:))));
+                        
+                    end
+                end
+                % Symmetrize to avoid computing entries twice
+                Train_kernel = Train_kernel + Train_kernel' - 1/2 * diag(diag(Train_kernel));
+                Train_kernel = [(1:size(Cov_train))' exp( - Train_kernel / alpha)];
+                
         end
         
         %% Train SVM based on the precomputed kernels
@@ -135,7 +167,7 @@ for prc = 1:length(train_percent)
 end
      
 %% Plot Results
-col = {'g','r','m','y', 'b'};
+col = {'g','r','m','y','c','k', 'b'};
 
 for vr = 1:size(accuracy,1)
     plot(train_percent,accuracy(vr,:),'color',col{vr},'Linewidth',2);
