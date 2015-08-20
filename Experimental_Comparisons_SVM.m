@@ -26,6 +26,7 @@ load('C:\Users\nikos\Desktop\data\Comb_Cov_123.mat');
 labels = double(labels);
 labels = labels + 1;
 
+
 % Comb_Cov_12 = zeros(10000,64,64);
 % Comb_Cov_23 = zeros(10000,96,96);
 % Comb_Cov_123 = zeros(10000,128,128);
@@ -79,6 +80,34 @@ for prc = 1:length(train_percent)
         % Compute distance between covariance matrices
         
         switch Metrics
+            case 'JBLD'
+                Test_kernel = zeros(size(Cov_test,1),size(Cov_train,1));
+                Train_kernel = zeros(size(Cov_train,1),size(Cov_train,1));
+                % Iterate with double for between test (rows) and train
+                % (column) covariance matrices.
+                for testmat = 1:size(Cov_test,1)
+                    for trainmat = 1:size(Cov_train,1)
+                        Test_kernel(testmat,trainmat) = jbld(squeeze(Cov_train(trainmat,:,:)),squeeze(Cov_test(testmat,:,:)));
+                    end 
+                end  
+                Test_kernel = [(1:size(Cov_test,1))' exp( - Test_kernel.^2 / alpha)];
+                
+                % Compute Train kernel
+                for index1 = 1:size(Cov_train,1)
+                    for index2 = 1:size(Cov_train,1)
+                        Train_kernel(index1,index2) = jbld(squeeze(Cov_train(index1,:,:)),squeeze(Cov_train(index2,:,:)));
+                        
+                    end
+                end
+                % Symmetrize to avoid computing entries twice
+                Train_kernel = Train_kernel + Train_kernel' - 1/2 * diag(diag(Train_kernel));
+                Train_kernel = [(1:size(Cov_train))' exp( - Train_kernel.^2 / alpha)];
+                if sum(sum(Train_kernel)) == 0
+                    error('Bad Kernel')
+                end
+                   
+                
+                
             case 'Stein'
                 Test_kernel = zeros(size(Cov_test,1),size(Cov_train,1));
                 Train_kernel = zeros(size(Cov_train,1),size(Cov_train,1));
@@ -158,7 +187,7 @@ for prc = 1:length(train_percent)
         end
         
         %% Train SVM based on the precomputed kernels
-        trained_model = svmtrain(sampled_train_labels, Train_kernel,'-s 0 -t 4');
+        trained_model = svmtrain(sampled_train_labels, Train_kernel,'-s 0 -c 1000 -t 4');
         
         %% Predict based on the model
         [predClass, acc, decVals] = svmpredict(testlab, Test_kernel, trained_model);
