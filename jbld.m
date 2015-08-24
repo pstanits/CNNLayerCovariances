@@ -7,10 +7,10 @@ if n < 13
     d = log(det(A+B)) - 0.5*log(det(A)) - 0.5*log(det(B)) - n*log(2);
 else
     if rank(A) < size(A,1)
-        A = A + 2 * eps * eye(size(A,1));
+        A = A + 2 * 10^(-6) * eye(size(A,1));
     end
     if rank(B) < size(B,1)
-        B = B + 2 * eps * eye(size(B,1));
+        B = B + 2 * 10^(-6) * eye(size(B,1));
     end
     
     r = chol(A+B);

@@ -22,7 +22,7 @@ load('C:\Users\nikos\Desktop\data\BaselineCov.mat');
 load('C:\Users\nikos\Desktop\data\Comb_Cov_12.mat');
 load('C:\Users\nikos\Desktop\data\Comb_Cov_23.mat');
 load('C:\Users\nikos\Desktop\data\Comb_Cov_123.mat');
-load('C:\Users\nikos\Desktop\data\Fused_Cov_1.mat');
+% load('C:\Users\nikos\Desktop\data\Fused_Cov_1.mat');
 
 labels = double(labels);
 labels = labels + 1;
@@ -188,40 +188,23 @@ for prc = 1:length(train_percent)
         end
         
         %% Train SVM based on the precomputed kernels
-        trained_model = svmtrain(sampled_train_labels, Train_kernel,'-s 0 -c 1.25 -t 4');
+        trained_model = svmtrain(sampled_train_labels, Train_kernel,'-s 0 -c 10 -t 4');
         
         %% Predict based on the model
-        [~, acc, decVals] = svmpredict(testlab, Test_kernel, trained_model);
+        [predClass, acc, decVals] = svmpredict(testlab, Test_kernel, trained_model);
         accuracy_test(vr,prc) = acc(1);
-        sprintf('Test accuracy for variable %d  and train percent %1.1f%% is %10.1f%%',vr, 100 * train_percent(prc),acc(1))
-        
-        [~, acc, decVals] = svmpredict(sampled_train_labels, Train_kernel, trained_model);
-        accuracy_train(vr,prc) = acc(1);
-        sprintf('Train accuracy for variable %d  and train percent %1.1f%% is %10.1f%%',vr, 100 * train_percent(prc),acc(1))
-        
-        
+        sprintf('Accuracy for variable %d  and train percent %1.1f%% is %10.1f%%',vr, 100 * train_percent(prc),acc(1))
     end   
 end
      
 %% Plot Results
-figure(1);
 col = {'g','r','m','y','c','k', 'b'};
-for vr = 1:size(accuracy_test,1)
-    hold on
-    plot(train_percent,accuracy_test(vr,:),'color',col{vr},'Linewidth',2);
-    
-end
-grid on
-axis('tight')
-title(sprintf('Test Performance Results using the %s metric',Metrics))
-hold off
 
-figure(2)
-for vr = 1:size(accuracy_train,1)
+for vr = 1:size(accuracy_test,1)
+    plot(train_percent,accuracy_test(vr,:),'color',col{vr},'Linewidth',2);
     hold on
-    plot(train_percent,accuracy_train(vr,:),'color',col{vr},'Linewidth',2);
-    
 end
+
 grid on
 axis('tight')
-title(sprintf('Train Performance Results using the %s metric',Metrics))
+title(sprintf('Performance Results using the %s metric',Metrics))
