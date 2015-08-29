@@ -184,7 +184,7 @@ for prc = 1:length(train_percent)
         end
         
         %% Train SVM based on the precomputed kernels
-        trained_model = svmtrain(sampled_train_labels, Train_kernel,'-s 0 -c 10 -t 4');
+        trained_model = svmtrain(sampled_train_labels, Train_kernel,'-s 0 -c 20 -t 4');
         
         %% Predict based on the model
         [~, acc, decVals] = svmpredict(testlab, Test_kernel, trained_model);
@@ -203,8 +203,7 @@ end
 figure(1);
 colors = cell(length(variables),1);
 for i = 1:length(variables)
-    
-    colors{i} = randn(1,3);
+    colors{i} = rand(1,3);
 end
 % col = {'g','r','m','y','c','k', 'b',};
 for vr = 1:size(accuracy_test,1)

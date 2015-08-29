@@ -64,7 +64,7 @@ for prc = 1:length(train_percent)
         
         
         %% Train SVM based on the precomputed kernels
-        trained_model = svmtrain(sampled_train_labels, Mean_train, '-s 1 -c 100 -t 0');
+        trained_model = svmtrain(sampled_train_labels, Mean_train, '-s 0 -c 5 -t 0');
         
         %% Predict based on the model
         [~, acc, ~] = svmpredict(testlab, Mean_test, trained_model);
@@ -88,6 +88,7 @@ for vr = 1:size(accuracy_test,1)
     
 end
 grid on
+legend('Layer1','Layer2','Layer3')
 axis('tight')
 title('Test Performance Results using the Layer means')
 hold off

@@ -10,6 +10,7 @@
 % September 2015
 
 clear all
+close all
 clc
 
 %% Data import
@@ -29,7 +30,7 @@ labels = labels + 1;
 
 
 variables = {Layer1,Layer2,Layer3, Comb_Cov_12, Comb_Cov_23, Comb_Cov_123, Cov_Baseline};
-mixing = [0.33333 0.5 0.16667];
+mixing = [0.2 0.3 0.5];
 split = 0.8;
 alpha = 1000;
 train_percent = [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1];
@@ -122,7 +123,7 @@ for prc = 1:length(train_percent)
     Test_kernel = [(1:size(Cov_test3,1))' Test_kernel(:,2:end)];
 
     %% Train SVM based on the precomputed kernels
-    trained_model = svmtrain(sampled_train_labels, Train_kernel,'-s 0 -c 10 -t 4');
+    trained_model = svmtrain(sampled_train_labels, Train_kernel,'-s 0 -c 3 -t 4');
 
     %% Predict based on the model
     [~, acc, decVals] = svmpredict(testlab, Test_kernel, trained_model);
