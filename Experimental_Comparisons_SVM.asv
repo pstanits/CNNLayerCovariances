@@ -39,9 +39,9 @@ split = 0.8;
 alpha = 1000;
 train_percent = [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1];
 Metrics = input('Define the Similarity function to be used:     ');
-NumNN = input('Insert the number of nearest neighbors:          '):
 accuracy_test = zeros(size(variables,2),numel(train_percent));
 accuracy_train = zeros(size(variables,2),numel(train_percent));
+mkdir('ConfusionMatrices')
 %% Prepare n folds for more robust validations
 distinctlab =  unique(labels);
 NumClass = size(distinctlab,1);
@@ -188,7 +188,21 @@ for prc = 1:length(train_percent)
         trained_model = svmtrain(sampled_train_labels, Train_kernel,'-s 0 -c 20 -t 4');
         
         %% Predict based on the model
-        [~, acc, decVals] = svmpredict(testlab, Test_kernel, trained_model);
+        [pred, acc, decVals] = svmpredict(testlab, Test_kernel, trained_model);
+        confmat = confusionmat(testlab,pred);
+        confmat = bsxfun(@rdivide,confmat,sum(confmat,2));
+        figure(1000)
+        h = imagesc(confmat);
+        colorbar
+        hold on 
+        title(sprintf('Confusion Matrix Generated for %1.1f of training data and variable %d',train_percent(prc),vr))
+        hold off
+        cd ConfusionMatrices\
+        saveas(h,sprintf('ConfMat_%1.1f_Variable_%d.jpg',train_percent(prc),vr))
+%         print(1000,sprintf('ConfMat_%1.1f_Variable_%d',train_percent(prc),vr),'jpeg')
+        close 1000
+        cd ..
+        
         accuracy_test(vr,prc) = acc(1);
         sprintf('Test accuracy for variable %d  and train percent %1.1f%% is %10.1f%%',vr, 100 * train_percent(prc),acc(1))
         
