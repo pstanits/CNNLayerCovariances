@@ -61,8 +61,8 @@ for l = 1:NumClass
         indclass = find(labels == l);
         indtrain = randsample(indclass,floor(split * length(indclass)));
         indtest = setdiff(indclass,indtrain);
-        I_train = [I_train indtrain];
-        I_test = [I_test indtest];
+        I_train = [I_train; indtrain];
+        I_test = [I_test; indtest];
         testlab = [testlab; labels(indtest)];
         train_lab = [train_lab; labels(indtrain)];
 end

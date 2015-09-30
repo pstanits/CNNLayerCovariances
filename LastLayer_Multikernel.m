@@ -21,7 +21,7 @@ load('C:\Users\nikos\Desktop\data\LastLayer.mat');
 labels = double(labels);
 labels = labels + 1;
 
-variables = {LastLayer, fullBlockDiag};
+variables = {fullBlockDiag, LastLayer};
 split = 0.8;
 alpha = 1000;
 train_percent = [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1];
@@ -40,8 +40,8 @@ for l = 1:NumClass
         indclass = find(labels == l);
         indtrain = randsample(indclass,floor(split * length(indclass)));
         indtest = setdiff(indclass,indtrain);
-        I_train = [I_train indtrain];
-        I_test = [I_test indtest];
+        I_train = [I_train; indtrain];
+        I_test = [I_test; indtest];
         testlab = [testlab; labels(indtest)];
         train_lab = [train_lab; labels(indtrain)];
 end
@@ -80,10 +80,9 @@ for prc = 1:length(train_percent)
     % Reshape covariance and compute euclidean distances
     Cov_train = reshape(Cov_train,[(size(Cov_train,1)),size(Cov_train,2)^2]);
     Cov_test = reshape(Cov_test,[(size(Cov_test,1)),size(Cov_test,2)^2]);
+    
     Feat_train = reshape(Feat_train,[(size(Feat_train,1)),size(Feat_train,2)^2]);
     Feat_test = reshape(Feat_test,[(size(Feat_test,1)),size(Feat_test,2)^2]);
-    Cov_train3 = reshape(Cov_train3,[(size(Cov_train3,1)),size(Cov_train3,2)^2]);
-    Cov_test3 = reshape(Cov_test3,[(size(Cov_test3,1)),size(Cov_test3,2)^2]);
     
     % Test kernel components
     Test_kernel1 = pdist2(Cov_test, Cov_train, 'euclidean');
