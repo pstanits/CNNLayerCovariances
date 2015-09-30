@@ -58,13 +58,13 @@ for prc = 1:length(train_percent)
     % Split between training and test
     Cov_test = X1(I_test,:,:);
     Cov_train = X1(I_train,:,:); 
-    Feat_test = X2(I_test,:,:);
-    Feat_train = X2(I_train,:,:); 
+    Feat_test = X2(I_test,:);
+    Feat_train = X2(I_train,:); 
     
 
     % Downsample train based on ind_train_perc
     Cov_train = Cov_train(ind_train_perc,:,:);
-    Feat_train = Feat_train(ind_train_perc,:,:);
+    Feat_train = Feat_train(ind_train_perc,:);
     sampled_train_labels = train_lab(ind_train_perc);
 
 
@@ -118,7 +118,7 @@ for prc = 1:length(train_percent)
     sprintf('Test accuracy for variable %d  and train percent %1.1f%% is %10.1f%%',3, 100 * train_percent(prc),acc(1))
         
     %% Train and Test nonKernel
-    trained_model = svmtrain(sampled_train_labels, Feat_train,'-s 0 -c 0.1 -t 0');
+    trained_model = svmtrain(sampled_train_labels, Feat_train,'-s 0 -c 1 -t 0');
     [~, acc, decVals] = svmpredict(testlab, Feat_test, trained_model);
     accuracy_test(4,prc) = acc(1);
     sprintf('Test accuracy for variable %d  and train percent %1.1f%% is %10.1f%%',4, 100 * train_percent(prc),acc(1))
