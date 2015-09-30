@@ -107,13 +107,13 @@ for i = 1:length(NumNN)
     colors{i} = rand(1,3);
 end
 
-for nNN = 1:size(accuracy_test,1)
+for nNN = 1:size(accuracy_test,3)
     hold on
-    plot(train_percent,accuracy_test(vr, : ,nNN),'color',colors{vr},'Linewidth',2);
+    plot(train_percent,accuracy_test(vr, : ,nNN),'color',colors{nNN},'Linewidth',2);
     
 end
 grid on
 axis('tight')
-title(sprintf('Test Performance Results using the %s metric',Metrics))
-% legend('Layer1', 'Layer2', 'Layer3', 'Block12', 'Block23','Block123','Fused123','Baseline', 'Scatter1', 'Scatter2','Scatter3')
+title('Test Performance Results using the LE metric')
+legend('1NN', '2NN', '3NN', '4NN', '5NN')
 hold off

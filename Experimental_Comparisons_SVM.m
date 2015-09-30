@@ -15,26 +15,33 @@ clc
 
 %% Data import
 
-load('C:\Users\nikos\Desktop\data\Covariance1.mat');
-load('C:\Users\nikos\Desktop\data\Covariance2.mat');
-load('C:\Users\nikos\Desktop\data\Covariance3.mat');
+% load('C:\Users\nikos\Desktop\data\Covariance1.mat');
+% load('C:\Users\nikos\Desktop\data\Covariance2.mat');
+% load('C:\Users\nikos\Desktop\data\Covariance3.mat');
 load('C:\Users\nikos\Desktop\data\Labels_test.mat');
-load('C:\Users\nikos\Desktop\data\BaselineCov.mat');
-load('C:\Users\nikos\Desktop\data\Comb_Cov_12.mat');
-load('C:\Users\nikos\Desktop\data\Comb_Cov_23.mat');
+% load('C:\Users\nikos\Desktop\data\BaselineCov.mat');
+% load('C:\Users\nikos\Desktop\data\Comb_Cov_12.mat');
+% load('C:\Users\nikos\Desktop\data\Comb_Cov_23.mat');
 load('C:\Users\nikos\Desktop\data\Comb_Cov_123.mat');
-load('C:\Users\nikos\Desktop\data\Fused_Cov_1.mat');
-load('C:\Users\nikos\Desktop\data\Scatter1.mat');
-load('C:\Users\nikos\Desktop\data\Scatter2.mat');
-load('C:\Users\nikos\Desktop\data\Scatter3.mat');
-load('C:\Users\nikos\Desktop\data\Mean1.mat');
-load('C:\Users\nikos\Desktop\data\Mean2.mat');
-load('C:\Users\nikos\Desktop\data\Mean3.mat');
+% load('C:\Users\nikos\Desktop\data\Fused_Cov_1.mat');
+% load('C:\Users\nikos\Desktop\data\Scatter1.mat');
+% load('C:\Users\nikos\Desktop\data\Scatter2.mat');
+% load('C:\Users\nikos\Desktop\data\Scatter3.mat');
+% load('C:\Users\nikos\Desktop\data\Mean1.mat');
+% load('C:\Users\nikos\Desktop\data\Mean2.mat');
+% load('C:\Users\nikos\Desktop\data\Mean3.mat');
+
+load('C:\Users\nikos\Desktop\data\fullCovariance1.mat');
+load('C:\Users\nikos\Desktop\data\fullCovariance2.mat');
+load('C:\Users\nikos\Desktop\data\fullCovariance3.mat');
+load('C:\Users\nikos\Desktop\data\fullBlock.mat');
+
 
 labels = double(labels);
 labels = labels + 1;
 
-variables = {Layer1, Layer2, Layer3, Comb_Cov_12, Comb_Cov_23, Comb_Cov_123, Fused_Cov_1, Cov_Baseline,scatter1, scatter2, scatter3};
+% variables = {Layer1, Layer2, Layer3, Comb_Cov_12, Comb_Cov_23, Comb_Cov_123, Fused_Cov_1, Cov_Baseline,scatter1, scatter2, scatter3};
+variables = {Layer1, Layer2, Layer3, fullBlockDiag,Comb_Cov_123};
 split = 0.8;
 alpha = 1000;
 train_percent = [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1];
@@ -189,19 +196,19 @@ for prc = 1:length(train_percent)
         
         %% Predict based on the model
         [pred, acc, decVals] = svmpredict(testlab, Test_kernel, trained_model);
-        confmat = confusionmat(testlab,pred);
-        confmat = bsxfun(@rdivide,confmat,sum(confmat,2));
-        figure(1000)
-        h = imagesc(confmat);
-        colorbar
-        hold on 
-        title(sprintf('Confusion Matrix Generated for %1.1f of training data and variable %d',train_percent(prc),vr))
-        hold off
-        cd ConfusionMatrices\
-        saveas(h,sprintf('ConfMat_%1.1f_Variable_%d.jpg',train_percent(prc),vr))
-%         print(1000,sprintf('ConfMat_%1.1f_Variable_%d',train_percent(prc),vr),'jpeg')
-        close 1000
-        cd ..
+%         confmat = confusionmat(testlab,pred);
+%         confmat = bsxfun(@rdivide,confmat,sum(confmat,2));
+%         figure(1000)
+%         h = imagesc(confmat);
+%         colorbar
+%         hold on 
+%         title(sprintf('Confusion Matrix Generated for %1.1f of training data and variable %d',train_percent(prc),vr))
+%         hold off
+%         cd ConfusionMatrices\
+%         saveas(h,sprintf('ConfMat_%1.1f_Variable_%d.jpg',train_percent(prc),vr))
+% %         print(1000,sprintf('ConfMat_%1.1f_Variable_%d',train_percent(prc),vr),'jpeg')
+%         close 1000
+%         cd ..
         
         accuracy_test(vr,prc) = acc(1);
         sprintf('Test accuracy for variable %d  and train percent %1.1f%% is %10.1f%%',vr, 100 * train_percent(prc),acc(1))
@@ -229,7 +236,7 @@ end
 grid on
 axis('tight')
 title(sprintf('Test Performance Results using the %s metric',Metrics))
-legend('Layer1', 'Layer2', 'Layer3', 'Block12', 'Block23','Block123','Fused123','Baseline', 'Scatter1', 'Scatter2','Scatter3')
+legend('Layer1', 'Layer2', 'Layer3', 'fullBlock123', 'iterBlock123');
 hold off
 
 figure(2)
@@ -240,5 +247,5 @@ for vr = 1:size(accuracy_train,1)
 end
 grid on
 axis('tight')
-legend('Layer1', 'Layer2', 'Layer3', 'Block12', 'Block23','Block123','Fused123','Baseline', 'Scatter1', 'Scatter2','Scatter3')
+legend('Layer1', 'Layer2', 'Layer3', 'fullBlock123','iterBlock123')
 title(sprintf('Train Performance Results using the %s metric',Metrics))
