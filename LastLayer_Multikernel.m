@@ -12,7 +12,7 @@
 clear all
 close all
 clc
-
+rng shuffle
 %% Data import
 
 load('C:\Users\nikos\Desktop\data\Labels_test.mat');
@@ -21,13 +21,13 @@ load('C:\Users\nikos\Desktop\data\LastLayer.mat');
 labels = double(labels);
 labels = labels + 1;
 
+mixing = [0.7 0.3];
 variables = {fullBlockDiag, LastLayer};
 split = 0.8;
-alpha = 1000;
+alpha1 = 1000;
+alpha2 = 10000;
 train_percent = [0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1];
-Metrics = 'LE';
-accuracy_test = zeros(size(variables,2),numel(train_percent));
-accuracy_train = zeros(size(variables,2),numel(train_percent));
+accuracy_test = zeros(4,numel(train_percent));
 %% Prepare n folds for more robust validations
 distinctlab =  unique(labels);
 NumClass = size(distinctlab,1);
@@ -81,64 +81,58 @@ for prc = 1:length(train_percent)
     Cov_train = reshape(Cov_train,[(size(Cov_train,1)),size(Cov_train,2)^2]);
     Cov_test = reshape(Cov_test,[(size(Cov_test,1)),size(Cov_test,2)^2]);
     
-    Feat_train = reshape(Feat_train,[(size(Feat_train,1)),size(Feat_train,2)^2]);
-    Feat_test = reshape(Feat_test,[(size(Feat_test,1)),size(Feat_test,2)^2]);
-    
     % Test kernel components
-    Test_kernel1 = pdist2(Cov_test, Cov_train, 'euclidean');
-    Test_kernel1 = [(1:size(Cov_test,1))' exp( - Test_kernel1.^2 / alpha)];
-    Test_kernel2 = pdist2(Feat_test, Feat_train, 'euclidean');
-    Test_kernel2 = [(1:size(Feat_test,1))' exp( - Test_kernel2.^2 / alpha)];
-    Test_kernel3 = pdist2(Cov_test3, Cov_train3, 'euclidean');
-    Test_kernel3 = [(1:size(Cov_test3,1))' exp( - Test_kernel3.^2 / alpha)];
+    Test_kernel_Cov = pdist2(Cov_test, Cov_train, 'euclidean');
+    Test_kernel_Cov = [(1:size(Cov_test,1))' exp( - Test_kernel_Cov.^2 / alpha1)];
+    Test_kernel_Feat = pdist2(Feat_test, Feat_train, 'euclidean');
+    Test_kernel_Feat = [(1:size(Feat_test,1))' exp( - Test_kernel_Feat.^2 / alpha2)];
     
     % Train kernel componenets
-    Train_kernel1 = pdist2(Cov_train, Cov_train, 'euclidean');
-    Train_kernel1 = [(1:size(Cov_train))' exp( - Train_kernel1.^2 / alpha)];
-    Train_kernel2 = pdist2(Feat_train, Feat_train, 'euclidean');
-    Train_kernel2 = [(1:size(Feat_train))' exp( - Train_kernel2.^2 / alpha)];
-    Train_kernel3 = pdist2(Cov_train3, Cov_train3, 'euclidean');
-    Train_kernel3 = [(1:size(Cov_train3))' exp( - Train_kernel3.^2 / alpha)];
+    Train_kernel_Cov = pdist2(Cov_train, Cov_train, 'euclidean');
+    Train_kernel_Cov = [(1:size(Cov_train))' exp( - Train_kernel_Cov.^2 / alpha1)];
+    Train_kernel_Feat = pdist2(Feat_train, Feat_train, 'euclidean');
+    Train_kernel_Feat = [(1:size(Feat_train))' exp( - Train_kernel_Feat.^2 / alpha2)];
     
     % Mixing kernels
-    Train_kernel = mixing(1) * Train_kernel1 + mixing(2) + Train_kernel2 + mixing(3) * Train_kernel3;
-    Test_kernel = mixing(1) * Test_kernel1 + mixing(2) + Test_kernel2 + mixing(3) * Test_kernel3;
-    Train_kernel = [(1:size(Cov_train3))' Train_kernel(:,2:end)];
-    Test_kernel = [(1:size(Cov_test3,1))' Test_kernel(:,2:end)];
-
-    %% Train SVM based on the precomputed kernels
-    trained_model = svmtrain(sampled_train_labels, Train_kernel,'-s 0 -c 3 -t 4');
-
-    %% Predict based on the model
-    [~, acc, decVals] = svmpredict(testlab, Test_kernel, trained_model);
+    Train_kernel_Fuse = mixing(1) * Train_kernel_Cov + mixing(2) + Train_kernel_Feat;
+    Test_kernel_Fuse = mixing(1) * Test_kernel_Cov + mixing(2) + Test_kernel_Feat;
+    Train_kernel_Fuse = [(1:size(Feat_train))' Train_kernel_Fuse(:,2:end)];
+    Test_kernel_Fuse = [(1:size(Feat_test,1))' Test_kernel_Fuse(:,2:end)];
+    
+    %%Train and test on Feature Kernel
+    trained_model = svmtrain(sampled_train_labels, Train_kernel_Cov,'-s 0 -c 100 -t 4');
+    [~, acc, decVals] = svmpredict(testlab, Test_kernel_Cov, trained_model);
     accuracy_test(1,prc) = acc(1);
     sprintf('Test accuracy for variable %d  and train percent %1.1f%% is %10.1f%%',1, 100 * train_percent(prc),acc(1))
-
-    [~, acc, decVals] = svmpredict(sampled_train_labels, Train_kernel, trained_model);
-    accuracy_train(1,prc) = acc(1);
-    sprintf('Train accuracy for variable %d  and train percent %1.1f%% is %10.1f%%',1, 100 * train_percent(prc),acc(1))
+    
+    %%Train and test on Block kernel
+    trained_model = svmtrain(sampled_train_labels, Train_kernel_Feat,'-s 0 -c 100 -t 4');
+    [~, acc, decVals] = svmpredict(testlab, Test_kernel_Feat, trained_model);
+    accuracy_test(2,prc) = acc(1);
+    sprintf('Test accuracy for variable %d  and train percent %1.1f%% is %10.1f%%',2, 100 * train_percent(prc),acc(1))
+    
+    %% Train SVM based on Fused kernel
+    trained_model = svmtrain(sampled_train_labels, Train_kernel_Fuse,'-s 0 -c 100 -t 4');
+    [~, acc, decVals] = svmpredict(testlab, Test_kernel_Fuse, trained_model);
+    accuracy_test(3,prc) = acc(1);
+    sprintf('Test accuracy for variable %d  and train percent %1.1f%% is %10.1f%%',3, 100 * train_percent(prc),acc(1))
         
+    %% Train and Test nonKernel
+    trained_model = svmtrain(sampled_train_labels, Feat_train,'-s 0 -c 0.1 -t 0');
+    [~, acc, decVals] = svmpredict(testlab, Feat_test, trained_model);
+    accuracy_test(4,prc) = acc(1);
+    sprintf('Test accuracy for variable %d  and train percent %1.1f%% is %10.1f%%',4, 100 * train_percent(prc),acc(1))
 end
      
 %% Plot Results
 figure(1);
-col = {'g','r','m','y','c','k', 'b'};
+col = {'g','r','m','b'};
 for vr = 1:size(accuracy_test,1)
     hold on
-    plot(train_percent,accuracy_test(vr,:),'color',col{vr},'Linewidth',2);
-    
+    plot(train_percent,accuracy_test(vr,:),'color',col{vr},'Linewidth',2);  
 end
 grid on
 axis('tight')
-title(sprintf('Test Performance Results using the %s metric','LE'))
+title(sprintf('MultiKernel Test Performance Results using the %s metric','LE'))
+legend('Covariances Kernel', 'Feature Kernel', 'Fused Kernels', '10D Non-kernel');
 hold off
-
-figure(2)
-for vr = 1:size(accuracy_train,1)
-    hold on
-    plot(train_percent,accuracy_train(vr,:),'color',col{vr},'Linewidth',2);
-    
-end
-grid on
-axis('tight')
-title(sprintf('Train Performance Results using the %s metric','LE'))
